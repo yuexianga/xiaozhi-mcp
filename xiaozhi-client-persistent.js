@@ -43,6 +43,7 @@ const state = {
 async function ensureDataDir() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.mkdir(path.join(DATA_DIR, 'images'), { recursive: true });
   } catch (err) {
     console.error('无法创建数据目录:', err.message);
   }
@@ -83,6 +84,19 @@ const TOOLS = [
         目标: { type: 'string', description: '目标用户或群组' }
       },
       required: ['消息']
+    }
+  },
+  {
+    name: '小欧_发送图片',
+    description: '发送图片到 Telegram',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        图片路径: { type: 'string', description: '本地图片文件路径' },
+        消息: { type: 'string', description: '图片说明（可选）' },
+        目标: { type: 'string', description: '目标用户或群组' }
+      },
+      required: ['图片路径']
     }
   },
   {
@@ -407,6 +421,9 @@ async function handleToolCall(params) {
       case '小欧_发送电报':
         return await sendTelegramMessage(args?.消息, args?.目标);
 
+      case '小欧_发送图片':
+        return await sendTelegramImage(args?.图片路径, args?.消息, args?.目标);
+
       case '小欧_发送邮件':
         return await sendEmail(args?.收件人, args?.主题, args?.正文, args?.格式);
 
@@ -513,7 +530,46 @@ async function sendTelegramMessage(message, target = null) {
     const response = JSON.parse(stdout);
 
     if (response.ok) {
-      return `✅ [Telegram消息已发送]\n消息: "${message}"\n目标: ${CHAT_ID}`;
+      return `✅ [Telegram消息已发送]\n消息: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"\n目标: ${CHAT_ID}`;
+    } else {
+      return `❌ 发送失败: ${response.description}`;
+    }
+  } catch (err) {
+    return `❌ 发送失败: ${err.message}`;
+  }
+}
+
+async function sendTelegramImage(imagePath, caption = '', target = null) {
+  if (!imagePath) return '❌ 请提供图片路径';
+
+  const resolvedPath = path.resolve(imagePath);
+  
+  // 检查文件是否存在
+  try {
+    await fs.access(resolvedPath);
+  } catch (err) {
+    return `❌ 图片文件不存在: ${imagePath}`;
+  }
+
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8066651062:AAFlM9hHtXCf-iOu3tjgRVXvkqm5PFeEakU';
+  const DEFAULT_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '7597776041';
+  const CHAT_ID = target || DEFAULT_CHAT_ID;
+
+  try {
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`;
+    
+    // 使用curl发送图片
+    const cmd = `curl -s -X POST "${url}" \\
+      -F "chat_id=${CHAT_ID}" \\
+      ${caption ? `-F "caption=${caption}"` : ''} \\
+      -F "photo=@${resolvedPath}"`;
+    
+    const { stdout } = await execPromise(cmd, { timeout: 30000 });
+    const response = JSON.parse(stdout);
+
+    if (response.ok) {
+      const fileInfo = response.result?.photo?.[0] || {};
+      return `✅ [Telegram图片已发送]\n图片: ${path.basename(imagePath)}\n文件ID: ${fileInfo.file_id || 'N/A'}\n大小: ${(fileInfo.file_size ? (fileInfo.file_size / 1024).toFixed(2) + 'KB' : '未知')}${caption ? '\n说明: ' + caption : ''}\n目标: ${CHAT_ID}`;
     } else {
       return `❌ 发送失败: ${response.description}`;
     }

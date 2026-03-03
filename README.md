@@ -71,9 +71,10 @@ mcporter call xiaozhi.xiaozhi_系统信息
 | `xiaozhi_系统信息` | 获取系统信息 | 无 |
 | `xiaozhi_执行命令` | 执行 Shell 命令 | `command` (命令) |
 | `xiaozhi_发送电报` | 发送 Telegram 消息 | `message` (内容), `target` (目标) |
+| `xiaozhi_发送图片` | 发送 Telegram 图片 | `imagePath` (图片路径), `caption` (说明), `target` (目标) |
 | `xiaozhi_检查服务` | 检查服务运行状态 | 无 |
 
-### 长连接版本独有工具 (共18个)
+### 长连接版本独有工具 (共19个)
 
 - `小欧_发送邮件` - 发送邮件（需配置 SMTP）
 - `小欧_网络搜索` - 网络搜索（需配置 API）
