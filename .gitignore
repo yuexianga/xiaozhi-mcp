@@ -1,0 +1,5 @@
+.env
+*.log
+*.pid
+data/*.json
+data/*.md
