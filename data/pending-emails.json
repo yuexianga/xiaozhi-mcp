@@ -1,0 +1,9 @@
+[
+  {
+    "to": "test@email.com",
+    "subject": "测试邮件",
+    "body": "测试内容",
+    "timestamp": "2026-03-03T14:46:53.478Z",
+    "status": "pending"
+  }
+]
